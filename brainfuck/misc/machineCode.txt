@@ -1,0 +1,86 @@
+ -  We use %rax as the data pointer
+ -  we use %rcx when immediate accessing modes are unavaillable
+ -  We use %rdx as pointer to an output buffer which saves data to be printed
+ -  We use %rbx as counter for output buffer
+
+add $x, %rax:   (>;<)
+    REX.W + 05 id	ADD RAX, imm32	I	Valid	N.E.	Add imm32 sign-extended to 64-bits to RAX.
+    0100    1000    0000 0101   0000 0000 0000 0000 0000 0000 0000 0001
+    fixed   WRXB    opC. (0x05) Imm V. (e.g. 1)
+
+add $x, (%rax): (+;-)
+    REX + 80 /0 ib	ADD r/m8*, imm8	MI	Valid	N.E.	Add sign-extended imm8 to r/m8.
+    0100    1000    1000 0000   00  000 000     0000 0001
+    fixed   WRXB    opC. (0x80) [r/m] /0 rax    Imm V. (0x1)
+
+jmp $x:     x=offset    (])
+    E9 cd	JMP rel32	D	Valid	Valid	Jump near, relative, RIP = RIP + 32-bit displacement sign extended to 64-bits.
+    1110 1001   1111 1111 1111 1111 1111 1111 1111 1111
+    opC.        Imm V. (-1)
+    0xE9 FF FF FF FF
+
+movzbq (%rax), %rcx:    ([)
+    REX.W + 0F B6 /r	MOVZX r64, r/m8	RM	Valid	N.E.	Move byte to quadword, zero-extension.
+    0100    1000    1011 0110   00 001 000
+    fixed   WRXB    opC.        [r/m] rcx [rax]
+    0x48 0F B6 08
+
+testb %cl %cl: (ZF)   ([)
+    84 /r	TEST r/m8, r8	MR	Valid	Valid	AND r8 with r/m8; set SF, ZF, PF according to result.
+    1000 0100   11 001 001
+    opC.        r/m cl cl
+
+jcc $x ZF:   x=offset   ([)
+    0F 84 cd	JZ rel32	D	Valid	Valid	Jump near if 0 (ZF=1)
+    0000 1111 1000 0100     1111 1111 1111 1111 1111 1111 1111 1111
+    opC.                    Imm V. (-1)
+
+orb al, (rax):
+    08 /r	OR r/m8, r8	MR	Valid	Valid	r/m8 OR r8.
+    0000 1000   00 000 000
+    opC.        mod reg rm
+    0x08 00
+
+    0x80 48 01 00
+    1000 0000   01 001 000  0000 0001   0000 0000
+    opC.        mod reg r/m disp8       imm v
+
+call $x:    x=offset (.)
+    E8 cd	CALL rel32	D	Valid	Valid	Call near, relative, displacement relative to next instruction. 32-bit displacement sign extended to 64-bits in 64-bit mode.
+    1110 1000   1111 1111 1111 1111 1111 1111 1111 1111
+    opC.        Imm V. (-1)
+    0xE8 00 00 00 00
+
+call (%r8):
+    FF /2	CALL r/m64	M	Valid	N.E.	Call near, absolute indirect, address given in r/m64.
+    0100    1001    1111 1111   11 010 010
+    REX     WRXB    opC.        mod reg rm
+    0x49 FF D2
+
+call (%r10):
+    FF /2	CALL r/m64	M	Valid	N.E.	Call near, absolute indirect, address given in r/m64.
+    0100    1001    1111 1111   11 010 000
+    REX     WRXB    opC.        mod reg rm
+    0x49 FF D0
+
+ret:
+    C3	RET	ZO	Valid	Valid	Near return to calling procedure.
+    0xC3
+
+movb $0, (%rax):    ([-])
+    REX + C6 /0 ib	MOV r/m81, imm8	MI	Valid	N.E.	Move imm8 to r/m8.
+    0100 1000   1100 0110   00 000 000      0000 0000
+    REX  WRXB   opC.        [rm] ext rax    Imm V
+    0x48 C6 00 00
+
+addb %cl, offs(%rax):
+    00 /r	ADD r/m8, r8	MR	Valid	Valid	Add r8 to r/m8.
+    0100 1000   0000 0000   01          001 000     0000 0000
+    REX  WRXB   opC.        [rm+32offs] rcx rax     8-bit ofs
+    0x48 00 48 00
+
+subb %cl, offs(%rax):
+    28 /r	SUB r/m8, r8	MR	Valid	Valid	Subtract r8 from r/m8.
+    0100 1000   0010 1000   01          001 000     0000 0000
+    REX  WRXB   opC.        [rm+32offs] rcx rax     8-bit ofs
+    0x48 28 48 00
